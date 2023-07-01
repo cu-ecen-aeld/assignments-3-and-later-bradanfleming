@@ -52,9 +52,14 @@ fi
 #make clean
 #make
 
+# Assigment 2: Remove build artifacts and compile writer for host
+echo "Compiling writer program"
+make clean writer
+
 for i in $( seq 1 $NUMFILES)
 do
-	./writer.sh "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	# Assignment 2: Use writer program instead of writer.sh script
+	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
 OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
