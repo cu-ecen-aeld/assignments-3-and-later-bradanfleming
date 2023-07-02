@@ -52,9 +52,10 @@ fi
 #make clean
 #make
 
-# Assigment 2: Remove build artifacts and compile writer for host
-echo "Compiling writer program"
-make clean writer
+# Assignment 2: Remove build artifacts and compile writer for host
+# Assignment 3: Remove make step from finder-test.sh (lol)
+#echo "Compiling writer program"
+#make clean writer
 
 for i in $( seq 1 $NUMFILES)
 do
