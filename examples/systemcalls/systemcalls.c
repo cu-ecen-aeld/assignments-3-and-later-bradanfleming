@@ -95,9 +95,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     if (pid == -1)
         return false;
     if (pid == 0) {
-        if (dup2(fd, STDOUT_FILENO) == -1)
-            return false;
-        if (execv(command[0], command) == -1)
+        if (dup2(fd, STDOUT_FILENO) == -1 || execv(command[0], command) == -1)
             exit(EXIT_FAILURE);
     }
     int ws;
