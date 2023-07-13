@@ -10,8 +10,10 @@ KERNEL_REPO=git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.gi
 KERNEL_VERSION=v5.1.10
 BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
-ARCH=arm64
-CROSS_COMPILE=aarch64-none-linux-gnu-
+CORES=$(nproc)
+
+export ARCH=arm64
+export CROSS_COMPILE=aarch64-none-linux-gnu-
 
 if [ $# -lt 1 ]
 then
@@ -33,11 +35,21 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     cd linux-stable
     echo "Checking out version ${KERNEL_VERSION}"
     git checkout ${KERNEL_VERSION}
-
-    # TODO: Add your kernel build steps here
+    git reset --hard HEAD
+    echo "Applying patches"
+    git apply "${FINDER_APP_DIR}/dtc-multiple-definition.patch"
+    echo "Cleaning kernel"
+    make mrproper
+    echo "Configuring kernel"
+    make defconfig
+    echo "Building boot image"
+    make -j${CORES} Image
+    echo "Building devicetree"
+    make -j${CORES} dtbs
 fi
 
 echo "Adding the Image in outdir"
+cp "${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image" "${OUTDIR}/Image"
 
 echo "Creating the staging directory for the root filesystem"
 cd "$OUTDIR"
@@ -47,34 +59,67 @@ then
     sudo rm  -rf ${OUTDIR}/rootfs
 fi
 
-# TODO: Create necessary base directories
+mkdir "${OUTDIR}/rootfs"
+pushd "${OUTDIR}/rootfs"
+mkdir bin dev etc home lib lib64 proc sbin sys tmp usr var
+mkdir usr/bin usr/lib usr/lib64 usr/sbin var/log
+popd
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
 then
+    echo "Cloning busybox ${BUSYBOX_VERSION}"
 git clone git://busybox.net/busybox.git
     cd busybox
     git checkout ${BUSYBOX_VERSION}
-    # TODO:  Configure busybox
+    echo "Cleaning busybox"
+    make distclean
+    echo "Configuring busybox"
+    make defconfig
 else
     cd busybox
 fi
+if [ ! -e ${OUTDIR}/busybox/busybox ]; then
+	echo "Building busybox"
+	make all
+fi
+echo "Installing busybox"
+make CONFIG_PREFIX="${OUTDIR}/rootfs" install
 
-# TODO: Make and install busybox
+echo "Checking library dependencies"
+cd "${OUTDIR}/rootfs"
+LIBC="$(dirname "$(dirname "$(which aarch64-none-linux-gnu-readelf)")")/${CROSS_COMPILE::-1}/libc"
+LOADER="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter" | awk 'NF>1{print substr($NF,2,length($NF)-2)}')"
+LIBS="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library" | awk 'NF>1{print substr($NF,2,length($NF)-2)}')"
 
-echo "Library dependencies"
-${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
-${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
+echo "Installing library dependencies"
+install -m 755 "${LIBC}/${LOADER}" "${OUTDIR}/rootfs/${LOADER}"
+printf "%s" "${LIBS}" | xargs --replace=% install -m 755 "${LIBC}/lib64/%" "${OUTDIR}/rootfs/lib64/%"
 
-# TODO: Add library dependencies to rootfs
+echo "Installing device nodes"
+sudo mknod -m 666 "${OUTDIR}/rootfs/dev/null" c 1 3
+sudo mknod -m 666 "${OUTDIR}/rootfs/dev/console" c 5 1
 
-# TODO: Make device nodes
+echo "Building writer"
+cd "${FINDER_APP_DIR}"
+make clean
+make writer
 
-# TODO: Clean and build the writer utility
+echo "Installing finder-app scripts"
+install -m 755 autorun-qemu.sh "${OUTDIR}/rootfs/home/autorun-qemu.sh"
+install -m 755 finder.sh "${OUTDIR}/rootfs/home/finder.sh"
+install -m 755 finder-test.sh "${OUTDIR}/rootfs/home/finder-test.sh"
+install -m 755 writer "${OUTDIR}/rootfs/home/writer"
+install -m 755 -d "${OUTDIR}/rootfs/home/conf"
+install -m 644 conf/assignment.txt "${OUTDIR}/rootfs/home/conf/assignment.txt"
+install -m 644 conf/username.txt "${OUTDIR}/rootfs/home/conf/username.txt"
 
-# TODO: Copy the finder related scripts and executables to the /home directory
-# on the target rootfs
+echo "Setting rootfs ownership"
+sudo chown root:root --recursive "${OUTDIR}/rootfs"
 
-# TODO: Chown the root directory
+echo "Building initramfs"
+cd "${OUTDIR}/rootfs"
+find . | cpio -H newc -ov --owner root:root 2>/dev/null > "${OUTDIR}/initramfs.cpio" 2> /dev/null
+gzip -f "${OUTDIR}/initramfs.cpio"
 
-# TODO: Create initramfs.cpio.gz
+echo "Completed build in ${OUTDIR}"
