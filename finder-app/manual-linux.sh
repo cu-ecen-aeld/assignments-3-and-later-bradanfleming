@@ -60,10 +60,9 @@ then
 fi
 
 mkdir "${OUTDIR}/rootfs"
-pushd "${OUTDIR}/rootfs"
+cd "${OUTDIR}/rootfs"
 mkdir bin dev etc home lib lib64 proc sbin sys tmp usr var
 mkdir usr/bin usr/lib usr/lib64 usr/sbin var/log
-popd
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
@@ -88,9 +87,12 @@ make CONFIG_PREFIX="${OUTDIR}/rootfs" install
 
 echo "Checking library dependencies"
 cd "${OUTDIR}/rootfs"
+parsedeps() {
+	exec awk 'NF>1{print substr($NF,2,length($NF)-2)}'
+}
 LIBC="$(realpath $(${CROSS_COMPILE}gcc -print-sysroot))"
-LOADER="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter" | awk 'NF>1{print substr($NF,2,length($NF)-2)}')"
-LIBS="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library" | awk 'NF>1{print substr($NF,2,length($NF)-2)}')"
+LOADER="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter" | parsedeps)"
+LIBS="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library" | parsedeps)"
 
 echo "Installing library dependencies"
 install -m 755 "${LIBC}/${LOADER}" "${OUTDIR}/rootfs/${LOADER}"
