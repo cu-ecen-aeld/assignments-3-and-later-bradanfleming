@@ -88,7 +88,7 @@ make CONFIG_PREFIX="${OUTDIR}/rootfs" install
 
 echo "Checking library dependencies"
 cd "${OUTDIR}/rootfs"
-LIBC="$(dirname "$(dirname "$(which aarch64-none-linux-gnu-readelf)")")/${CROSS_COMPILE::-1}/libc"
+LIBC="$(realpath $(${CROSS_COMPILE}gcc -print-sysroot))"
 LOADER="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter" | awk 'NF>1{print substr($NF,2,length($NF)-2)}')"
 LIBS="$(${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library" | awk 'NF>1{print substr($NF,2,length($NF)-2)}')"
 
