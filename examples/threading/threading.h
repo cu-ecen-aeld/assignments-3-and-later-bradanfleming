@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 /**
  * This structure should be dynamically allocated and passed as
@@ -8,12 +9,14 @@
  * the joiner thread.
  */
 struct thread_data{
-    /*
-     * TODO: add other values your thread will need to manage
-     * into this structure, use this structure to communicate
-     * between the start_thread_obtaining_mutex function and
-     * your thread implementation.
-     */
+    /* The mutex to be locked by the thread. */
+    pthread_mutex_t *mutex;
+
+    /* Time the thread will sleep for before obtaining the mutex. */
+    struct timespec wait_to_obtain;
+
+    /* Time the thread will hold the mutex for before exiting. */
+    struct timespec wait_to_release;
 
     /**
      * Set to true if the thread completed with success, false
