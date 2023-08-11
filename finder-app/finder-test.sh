@@ -8,7 +8,8 @@ set -u
 NUMFILES=10
 WRITESTR=AELD_IS_FUN
 WRITEDIR=/tmp/aeld-data
-username=$(cat conf/username.txt)
+# Assignment 4 Part 2: Assume config files are in /etc/finder-app/conf
+username=$(cat /etc/finder-app/conf/username.txt)
 
 if [ $# -lt 3 ]
 then
@@ -32,7 +33,8 @@ echo "Writing ${NUMFILES} files containing string ${WRITESTR} to ${WRITEDIR}"
 rm -rf "${WRITEDIR}"
 
 # create $WRITEDIR if not assignment1
-assignment=`cat conf/assignment.txt`
+# Assignment 4 Part 2: Assume config files are in /etc/finder-app/conf
+assignment=`cat /etc/finder-app/conf/assignment.txt`
 
 if [ $assignment != 'assignment1' ]
 then
@@ -60,10 +62,14 @@ fi
 for i in $( seq 1 $NUMFILES)
 do
 	# Assignment 2: Use writer program instead of writer.sh script
-	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	# Assignment 4 Part 1: Run binaries from PATH
+	writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+# Assignment 4 Part 1: Run binaries from PATH
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
+# Assignment 4 Part 1: Write output of finder command to /tmp/assignment4-result.txt
+writer "/tmp/assignment4-result.txt" "${OUTPUTSTRING}"
 
 # remove temporary directories
 rm -rf /tmp/aeld-data
