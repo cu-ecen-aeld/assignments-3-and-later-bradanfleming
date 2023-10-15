@@ -8,7 +8,7 @@ default: all
 all: aesdsocket
 
 aesdsocket: aesdsocket.c
-	$(CC) $^ -o $@
+	$(CROSS_COMPILE)$(CC) $^ -o $@
 
 clean:
 	rm -f aesdsocket
