@@ -1,18 +1,18 @@
 #!/bin/sh
-set -e
-NAME="aesdsocket"
+
+DAEMON="aesdsocket"
 
 case "${1}" in
 	start)
-		printf "Starting %s\n" "${NAME}"
-		start-stop-daemon --start "/usr/bin/${NAME}" -- -d
+		printf "Starting %s\n" "${DAEMON}"
+		start-stop-daemon -Sqx "/usr/bin/${DAEMON}" -- -d
 		;;
 	stop)
-		printf "Stopping %s\n" "${NAME}"
-		start-stop-daemon --stop "/usr/bin/${NAME}"
+		printf "Stopping %s\n" "${DAEMON}"
+		start-stop-daemon -Kqx "/usr/bin/${DAEMON}"
 		;;
 	*)
-		printf "%s\n" "Invalid argument"
+		printf "Usage: %s {start|stop}\n" "${0}"
 		exit 1;
 esac
 
