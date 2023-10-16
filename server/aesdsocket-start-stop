@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+NAME="aesdsocket"
+
+case "${1}" in
+	start)
+		printf "Starting %s\n" "${NAME}"
+		start-stop-daemon --start "/usr/bin/${NAME}" -- -d
+		;;
+	stop)
+		printf "Stopping %s\n" "${NAME}"
+		start-stop-daemon --stop "/usr/bin/${NAME}"
+		;;
+	*)
+		printf "%s\n" "Invalid argument"
+		exit 1;
+esac
+
+exit 0
